@@ -129,6 +129,15 @@ $spoolerMarker = if ($spoolerDisabled) { '-' } else { 'OK' }
 Write-Check $spoolerMarker 'Print Spooler service' '' "$(if ($spooler) { "$($spooler.Status) / $($spooler.StartType)" } else { 'not installed' })"
 Write-Host ''
 
+# Point and Print needs the spooler. If it is off, nothing here is exploitable; stop early.
+if ($spoolerDisabled) {
+    Write-Separator
+    Write-Host '  VERDICT: NOT APPLICABLE - Print Spooler is disabled.' -ForegroundColor Green
+    Write-Host '           Point and Print cannot run, so the configuration is not assessed.'
+    Write-Host ''
+    return
+}
+
 Write-Separator
 Write-Host "  $($PointAndPrintKey -replace '^HKLM:', 'HKLM')"
 Write-Host ''
@@ -179,11 +188,8 @@ switch ($case) {
     }
 }
 
-# A vulnerable config is only exploitable while the spooler can run.
-if ($case -ne 'SECURE' -and $spoolerDisabled) {
-    Write-Host '           Spooler is disabled: unsafe, but not exploitable as is.' -ForegroundColor Yellow
-}
-elseif ($case -ne 'SECURE' -and -not $spoolerRunning) {
+# The spooler is enabled here (the disabled case returned earlier), but it may be stopped.
+if ($case -ne 'SECURE' -and -not $spoolerRunning) {
     Write-Host '           Spooler is stopped but not disabled: it may start again.' -ForegroundColor Yellow
 }
 
